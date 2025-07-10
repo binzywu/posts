@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Interactive Portugal Itinerary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony (Warm neutrals with muted blue and terracotta accents) -->
+    <!-- Application Structure Plan: The application uses a tabbed dashboard structure to organize the dense itinerary into thematic, digestible sections: Overview, Daily Itinerary, Travel Logistics, Dining, Concerts, and Checklist. This non-linear approach prioritizes user-driven exploration over the report's original chronological format. Users can quickly access specific information (e.g., all restaurant options or just the Coimbra-Porto travel plan) without scrolling through unrelated daily details. This structure transforms the static document into a practical, interactive tool for on-the-go reference. Key interactions include an accordion for daily plans, interactive filtering for dining, and a dynamic chart for comparing travel legs. -->
+    <!-- Visualization & Content Choices: 
+        - Overview: Goal is to provide a high-level summary. A visual timeline built with HTML/CSS is used to show the trip's flow, which is more engaging than a simple list of dates.
+        - Daily Itinerary: Goal is to present detailed plans without overwhelming the user. An HTML/CSS accordion is used, allowing users to expand only the day they are interested in.
+        - Travel Logistics: Goal is to consolidate and compare all major travel segments. A Chart.js bar chart provides instant visual comparison of travel times, supported by an interactive selector that updates a text block with specific costs and booking info. This is more effective than a static table.
+        - Dining Guide: Goal is to allow easy filtering of restaurant recommendations. Interactive filter buttons (HTML/JS) control the visibility of restaurant cards, enabling users to instantly see options by city.
+        - Concerts & Checklist: Goal is to isolate critical information. Simple, clear HTML cards are used for easy readability.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #fdfcf9; }
+        h1, h2, h3 { font-family: 'Lora', serif; }
+        .tab-active { border-color: #c2410c; color: #c2410c; background-color: #fff7ed; }
+        .tab-inactive { border-color: transparent; color: #57534e; }
+        .accordion-header { transition: background-color 0.3s ease; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; }
+        .content-active { display: block; }
+        .content-inactive { display: none; }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 300px; max-height: 40vh; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+    </style>
+</head>
+<body class="bg-amber-50 text-stone-700">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-stone-800">A Grand Tour of Portugal</h1>
+            <p class="text-lg text-stone-600 mt-2">Your Interactive Itinerary: July 27 - August 3, 2025</p>
+        </header>
+
+        <nav class="mb-8 border-b border-stone-200">
+            <ul class="flex flex-wrap -mb-px justify-center text-sm font-medium text-center" id="tab-navigation">
+                <li class="mr-2"><button class="inline-block p-4 border-b-2 rounded-t-lg tab-active" data-tab="overview">✈️ Overview</button></li>
+                <li class="mr-2"><button class="inline-block p-4 border-b-2 rounded-t-lg tab-inactive" data-tab="itinerary">🗓️ Daily Itinerary</button></li>
+                <li class="mr-2"><button class="inline-block p-4 border-b-2 rounded-t-lg tab-inactive" data-tab="travel">🚌 Travel Logistics</button></li>
+                <li class="mr-2"><button class="inline-block p-4 border-b-2 rounded-t-lg tab-inactive" data-tab="dining">🍷 Dining Guide</button></li>
+                <li class="mr-2"><button class="inline-block p-4 border-b-2 rounded-t-lg tab-inactive" data-tab="concerts">🎻 Concerts</button></li>
+                <li><button class="inline-block p-4 border-b-2 rounded-t-lg tab-inactive" data-tab="checklist">✅ Checklist</button></li>
+            </ul>
+        </nav>
+
+        <main id="tab-content">
+            
+            <section id="overview-content" class="content-active">
+                <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Trip at a Glance</h2>
+                    <p class="text-stone-600 mb-8">Welcome to your first journey to Portugal! This dashboard provides a visual overview of your adventure, blending cultural discovery with your son's concert tour. You'll travel from the historic hills of Lisbon to the spiritual heart of Fátima, through the ancient university city of Coimbra, and culminating in the vibrant, riverside city of Porto. Use the tabs above to explore your detailed daily plans, travel logistics, dining options, and more.</p>
+                    
+                    <div class="w-full overflow-x-auto pb-4">
+                        <h3 class="text-2xl font-semibold text-stone-700 mb-6 text-center">Your Journey Timeline</h3>
+                        <div class="relative wrap overflow-hidden h-48">
+                           <div class="border-2-2 absolute border-opacity-20 border-stone-700 h-full border" style="left: 50%"></div>
+                            <div class="flex justify-between items-center w-full h-full">
+                                <div class="w-1/4 text-center">
+                                    <div class="bg-orange-600 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-1">LIS</div>
+                                    <p class="text-sm font-semibold">Lisbon</p>
+                                    <p class="text-xs text-stone-500">Jul 27-29</p>
+                                </div>
+                                <div class="w-1/4 text-center">
+                                    <div class="bg-orange-700 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-1">FAT</div>
+                                     <p class="text-sm font-semibold">Fátima</p>
+                                     <p class="text-xs text-stone-500">Jul 29-31</p>
+                                </div>
+                                <div class="w-1/4 text-center">
+                                    <div class="bg-orange-800 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-1">COI</div>
+                                    <p class="text-sm font-semibold">Coimbra</p>
+                                    <p class="text-xs text-stone-500">Jul 31-Aug 1</p>
+                                </div>
+                                <div class="w-1/4 text-center">
+                                    <div class="bg-orange-900 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-1">OPO</div>
+                                    <p class="text-sm font-semibold">Porto</p>
+                                    <p class="text-xs text-stone-500">Aug 1-3</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                        <div class="bg-amber-50 p-4 rounded-lg">
+                            <h4 class="text-xl font-bold text-stone-700">4 Cities</h4>
+                            <p class="text-sm text-stone-600">Exploring Portugal's diversity</p>
+                        </div>
+                        <div class="bg-amber-50 p-4 rounded-lg">
+                            <h4 class="text-xl font-bold text-stone-700">3 Concerts</h4>
+                            <p class="text-sm text-stone-600">A special musical journey</p>
+                        </div>
+                         <div class="bg-amber-50 p-4 rounded-lg">
+                            <h4 class="text-xl font-bold text-stone-700">7 Nights</h4>
+                            <p class="text-sm text-stone-600">An unforgettable week</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="itinerary-content" class="content-inactive">
+                 <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Daily Itinerary</h2>
+                    <p class="text-stone-600 mb-8">Here is your detailed day-by-day plan. Click on any day to expand and see the schedule, sightseeing notes, and recommendations for that day. This allows you to focus on one day at a time while keeping the overall view clean and simple.</p>
+                    <div id="accordion-container" class="space-y-2"></div>
+                </div>
+            </section>
+            
+            <section id="travel-content" class="content-inactive">
+                <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Travel Logistics</h2>
+                    <p class="text-stone-600 mb-8">This section consolidates all your major travel plans between cities and for concert excursions. Use the buttons below to select a specific travel leg. The chart will visually compare the travel times, and the text box will update with detailed recommendations, costs, and booking advice for that specific journey. This makes it easy to review your travel options at a glance.</p>
+                    
+                    <div id="travel-buttons" class="flex flex-wrap justify-center gap-2 mb-8"></div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                        <div class="lg:col-span-3">
+                            <div class="chart-container">
+                                <canvas id="travelChart"></canvas>
+                            </div>
+                        </div>
+                        <div id="travel-details" class="lg:col-span-2 bg-amber-50 p-6 rounded-lg">
+                            <h3 id="travel-details-title" class="text-xl font-bold text-stone-800 mb-2">Select a travel leg</h3>
+                            <p id="travel-details-text" class="text-stone-600">Details about the selected journey will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="dining-content" class="content-inactive">
+                <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Curated Dining Guide</h2>
+                    <p class="text-stone-600 mb-8">All restaurant recommendations from your itinerary are collected here for easy access. Use the filters to show dining options for a specific city. This is your quick guide to tasting the best of Portugal's cuisine, from modern hotspots to traditional taverns. Reservations are highly recommended for most places.</p>
+                    
+                    <div id="dining-filters" class="flex flex-wrap justify-center gap-2 mb-8">
+                        <button class="px-4 py-2 text-sm font-medium text-white bg-orange-700 rounded-lg shadow-sm hover:bg-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50" data-filter="all">All Cities</button>
+                        <button class="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg shadow-sm hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50" data-filter="Lisbon">Lisbon</button>
+                        <button class="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg shadow-sm hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50" data-filter="Fátima">Fátima</button>
+                        <button class="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg shadow-sm hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50" data-filter="Coimbra">Coimbra</button>
+                        <button class="px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg shadow-sm hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50" data-filter="Porto/Gaia">Porto/Gaia</button>
+                    </div>
+
+                    <div id="dining-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </div>
+            </section>
+
+            <section id="concerts-content" class="content-inactive">
+                <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Concert Schedule</h2>
+                    <p class="text-stone-600 mb-8">A key part of your trip is seeing your son perform. This section provides a clear, focused view of the concert schedule, including dates, times, and venue locations. All logistical travel to these events is detailed in your Daily Itinerary and the Travel Logistics tab.</p>
+                    <div id="concerts-container" class="space-y-6"></div>
+                </div>
+            </section>
+
+            <section id="checklist-content" class="content-inactive">
+                <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Pre-Trip Checklist & Practical Tips</h2>
+                    <p class="text-stone-600 mb-8">Here are the essential planning tips and practical advice from your itinerary to ensure a smooth and enjoyable journey. Review this checklist before you go to make sure all key bookings are handled.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-xl font-bold text-stone-700 mb-3">✅ Advance Bookings are Essential</h3>
+                            <ul class="list-disc list-inside space-y-2 text-stone-600">
+                                <li><strong>Transport:</strong> All inter-city bus tickets and all private transfers (especially for concerts and airport runs).</li>
+                                <li><strong>Attractions:</strong> Timed-entry tickets for Jerónimos Monastery, São Jorge Castle, University of Coimbra (Joanina Library), and Livraria Lello.</li>
+                                <li><strong>Restaurants:</strong> Key dinner reservations, especially for Tia Alice and Solar dos Presuntos.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-stone-700 mb-3">🧳 Packing</h3>
+                            <ul class="list-disc list-inside space-y-2 text-stone-600">
+                                <li><strong>Clothing:</strong> Lightweight layers for hot days and cooler evenings.</li>
+                                <li><strong>Attire:</strong> Smart casual for dinners/concerts. Modest dress (shoulders/knees covered) for religious sites.</li>
+                                <li><strong>Footwear:</strong> Comfortable walking shoes are non-negotiable for cobblestones and hills.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-stone-700 mb-3">🌍 Practical Tips</h3>
+                             <ul class="list-disc list-inside space-y-2 text-stone-600">
+                                <li><strong>Connectivity:</strong> Check international roaming plans or consider a local eSIM for data.</li>
+                                <li><strong>Currency:</strong> Euro (€). Carry some cash for small purchases, but credit cards are widely accepted.</li>
+                                <li><strong>Language:</strong> A few words of Portuguese (Olá, Por favor, Obrigado/a) are greatly appreciated.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <script>
+        const appData = {
+            itinerary: [
+                {
+                    day: "Day 1: Sun, Jul 27",
+                    title: "Arrival in Lisbon",
+                    icon: "🛬",
+                    content: `
+                        <p><strong>6:00 PM:</strong> Arrive at Lisbon Airport (LIS). Expect 45-60 mins for immigration & baggage.</p>
+                        <p><strong>Transportation:</strong> Recommended to take a licensed taxi (~€7-€15) or a pre-booked transfer (~€25) for comfort. Metro is a great alternative (~20 mins to São Sebastião).</p>
+                        <p><strong>7:30 PM:</strong> Check into Hotel Olissippo Marquês de Sá.</p>
+                        <p><strong>8:30 PM:</strong> Welcome dinner at <strong>Restaurant Drogaria</strong> (Michelin-recognized, modern Portuguese).</p>
+                    `
+                },
+                {
+                    day: "Day 2: Mon, Jul 28",
+                    title: "Historic Lisbon & Concert",
+                    icon: "🏰",
+                    content: `
+                        <p><strong>Morning:</strong> Explore Baixa & Alfama districts. Start at Rossio Square, walk down Rua Augusta to Praça do Comércio. Wander into Alfama's historic streets.</p>
+                        <p><strong>1:00 PM:</strong> Lunch with a view near Miradouro das Portas do Sol.</p>
+                        <p><strong>2:30 PM:</strong> Visit São Jorge Castle (book tickets online!).</p>
+                        <p><strong>5:00 PM:</strong> Return to hotel to rest.</p>
+                        <p><strong>7:30 PM:</strong> Pre-concert dinner at <strong>Solar dos Presuntos</strong> (legendary seafood).</p>
+                        <p><strong>9:00 PM:</strong> <strong>Concert at Aula Magna, University of Lisbon.</strong></p>
+                    `
+                },
+                {
+                    day: "Day 3: Tue, Jul 29",
+                    title: "Belém & Travel to Fátima",
+                    icon: "⛵",
+                    content: `
+                        <p><strong>Morning:</strong> Explore Belém district (take a taxi for comfort).</p>
+                        <p><strong>First Stop:</strong> Go early to <strong>Pastéis de Belém</strong> to beat the queues.</p>
+                        <p><strong>9:30 AM:</strong> Visit Jerónimos Monastery (book tickets online!).</p>
+                        <p><strong>11:00 AM:</strong> See the Monument to the Discoveries.</p>
+                        <p><strong>11:45 AM:</strong> Visit Belém Tower (book tickets online!).</p>
+                        <p><strong>2:30 PM:</strong> Return to hotel to check-out.</p>
+                        <p><strong>4:00 PM:</strong> Travel from Lisbon (Sete Rios Terminal) to Fátima via Rede Expressos bus (~90 mins).</p>
+                        <p><strong>Evening:</strong> Arrive in Fátima, check into Aurea Fátima Hotel. Dinner at <strong>Tia Alice</strong> (book well in advance). Attend the 9:30 PM Candlelight Procession.</p>
+                    `
+                },
+                {
+                    day: "Day 4: Wed, Jul 30",
+                    title: "Fátima Sanctuary & Concert",
+                    icon: "🕊️",
+                    content: `
+                        <p><strong>Morning:</strong> Explore the Sanctuary of Fátima: Chapel of Apparitions, Basilica of Our Lady of the Rosary, Basilica of the Most Holy Trinity.</p>
+                        <p><strong>12:30 PM:</strong> Lunch at Restaurante A Tasquinha.</p>
+                        <p><strong>2:30 PM:</strong> Walk the Via Sacra to Aljustrel to visit the shepherd children's homes.</p>
+                        <p><strong>7:00 PM:</strong> Travel to Torres Novas via pre-booked private transfer for dinner.</p>
+                        <p><strong>9:30 PM:</strong> <strong>Concert at Teatro Virgínia, Torres Novas.</strong></p>
+                        <p><strong>~11:30 PM:</strong> Return to Fátima via private transfer.</p>
+                    `
+                },
+                {
+                    day: "Day 5: Thu, Jul 31",
+                    title: "Travel to Coimbra",
+                    icon: "🎓",
+                    content: `
+                        <p><strong>Morning:</strong> Leisurely breakfast and final visit to the Sanctuary.</p>
+                        <p><strong>11:00 AM:</strong> Check-out from hotel.</p>
+                        <p><strong>11:30 AM:</strong> Travel from Fátima to Coimbra via express bus (~60 mins).</p>
+                        <p><strong>1:00 PM:</strong> Arrive in Coimbra, check into Vila Gale Coimbra.</p>
+                        <p><strong>Afternoon:</strong> Explore Coimbra's Baixa. Visit Monastery of Santa Cruz and have coffee at the historic Café Santa Cruz.</p>
+                        <p><strong>7:30 PM:</strong> Dinner at <strong>Zé Manel dos Ossos</strong> (authentic, queue early) or <strong>Solar do Bacalhau</strong>.</p>
+                    `
+                },
+                {
+                    day: "Day 6: Fri, Aug 1",
+                    title: "Coimbra, Concert & Travel to Porto",
+                    icon: "📚",
+                    content: `
+                        <p><strong>Morning:</strong> Visit the University of Coimbra (book tickets & timed slot for Joanina Library online!). Explore the Royal Palace and Saint Michael's Chapel.</p>
+                        <p><strong>1:00 PM:</strong> Lunch near the Old Cathedral (Sé Velha).</p>
+                        <p><strong>3:00 PM:</strong> **Crucial Step:** Return to hotel, check-out, and store luggage.</p>
+                        <p><strong>5:00 PM:</strong> Early dinner in Coimbra.</p>
+                        <p><strong>6:30 PM:</strong> **Private transfer picks you up with luggage.** Drive to Góis (~45 mins).</p>
+                        <p><strong>9:00 PM:</strong> <strong>Concert at Casa da Cultura de Góis.</strong></p>
+                        <p><strong>~11:00 PM:</strong> Your transfer drives you directly to Porto (~2 hrs).</p>
+                        <p><strong>~1:00 AM (Aug 2):</strong> Arrive and check into Forte de Gaia, Autograph Collection in Porto.</p>
+                    `
+                },
+                {
+                    day: "Day 7: Sat, Aug 2",
+                    title: "Porto & Gaia",
+                    icon: "🌉",
+                    content: `
+                        <p><strong>10:00 AM:</strong> Leisurely start. Walk to Mosteiro da Serra do Pilar for the best view of Porto.</p>
+                        <p><strong>11:00 AM:</strong> Port wine tasting in Gaia (e.g., Taylor's, Ferreira, Cálem - book online).</p>
+                        <p><strong>1:00 PM:</strong> Lunch in Gaia with a view (e.g., Vinum, Bacalhoeiro).</p>
+                        <p><strong>3:00 PM:</strong> Walk across the upper deck of Dom Luís I Bridge to Porto.</p>
+                        <p><strong>Afternoon:</strong> Explore Porto's historic center: São Bento Station (azulejos), Livraria Lello (book timed ticket online!), São Francisco Church (gold interior).</p>
+                        <p><strong>6:30 PM:</strong> Stroll along the Cais da Ribeira.</p>
+                        <p><strong>8:00 PM:</strong> Farewell dinner. Consider <strong>Barão Fladgate</strong> at Taylor's for a romantic setting.</p>
+                    `
+                },
+                {
+                    day: "Day 8: Sun, Aug 3",
+                    title: "Departure",
+                    icon: "🛫",
+                    content: `
+                        <p><strong>6:30 AM:</strong> Depart hotel for Porto Airport (OPO) via pre-booked taxi/transfer (~20-30 mins).</p>
+                        <p><strong>7:00 AM:</strong> Arrive at airport for your 9:00 AM flight.</p>
+                        <p><strong>Safe travels home!</strong></p>
+                    `
+                }
+            ],
+            travel: [
+                { leg: "Lisbon -> Fátima", mode: "Express Bus", time: 1.5, cost: "€12-€15", notes: "Book online via Rede Expressos or FlixBus. Departs from Sete Rios terminal. Fast, direct, and comfortable. Train is not recommended." },
+                { leg: "Fátima -> Torres Novas", mode: "Private Transfer", time: 0.5, cost: "Varies", notes: "Essential for the concert's round trip due to the late return. Book a local Fátima taxi/car service in advance for the evening." },
+                { leg: "Fátima -> Coimbra", mode: "Express Bus", time: 1, cost: "€3-€10", notes: "Book online via Rede Expressos or FlixBus. Very frequent, fast, and inexpensive route from Fátima bus station." },
+                { leg: "Coimbra -> Góis -> Porto", mode: "Private Transfer", time: 2.75, cost: "Varies", notes: "Critical logistical solution for this complex day. Book a single service to handle luggage, drive to the concert in Góis (~45m), wait, and then continue to Porto (~2h)." },
+                { leg: "Porto Airport", mode: "Taxi / Transfer", time: 0.4, cost: "€25-€35", notes: "Essential for an early morning flight to ensure punctuality. Pre-book with your hotel or a local service." },
+            ],
+            dining: [
+                { name: "Restaurant Drogaria", city: "Lisbon", style: "Modern Portuguese", price: "€€€", notes: "An elegant, Michelin-mentioned welcome dinner. Book online a week in advance." },
+                { name: "Solar dos Presuntos", city: "Lisbon", style: "Traditional Seafood", price: "€€€", notes: "A classic, bustling Lisbon seafood feast. Book well in advance; it's very popular." },
+                { name: "A Cevicheria", city: "Lisbon", style: "Peruvian/Seafood", price: "€€€", notes: "A trendy, no-reservations spot in Príncipe Real. Arrive before opening to queue." },
+                { name: "Tia Alice", city: "Fátima", style: "Traditional Portuguese", price: "€€€", notes: "A special, authentic dinner; a Portuguese institution. Essential to book weeks, if not months, in advance." },
+                { name: "Restaurante A Tasquinha", city: "Fátima", style: "Traditional Portuguese", price: "€€", notes: "A reliable, delicious, and convenient lunch near the Sanctuary. Recommended to book." },
+                { name: "Zé Manel dos Ossos", city: "Coimbra", style: "Traditional Portuguese (Tasca)", price: "€", notes: "Truly authentic, memorable, and fun. No dinner reservations. Arrive before opening to queue." },
+                { name: "Solar do Bacalhau", city: "Coimbra", style: "Traditional Portuguese", price: "€€", notes: "Excellent codfish dishes in a classic setting. Book online a few days in advance." },
+                { name: "Vinum Restaurant & Wine Bar", city: "Porto/Gaia", style: "Gastronomic/Portuguese", price: "€€€€", notes: "Sophisticated lunch with stunning views at Graham's Port Lodge. Book well in advance." },
+                { name: "Barão Fladgate", city: "Porto/Gaia", style: "Contemporary Portuguese", price: "€€€€", notes: "A romantic farewell dinner with glittering views of Porto at Taylor's. Book well in advance." },
+                { name: "Cantinho do Avillez", city: "Porto/Gaia", style: "Modern Portuguese", price: "€€€", notes: "A trendy but accessible spot in Porto by a star chef. Book online; very popular." }
+            ],
+            concerts: [
+                { title: "Joint Concert with Jovem Orquestra Portuguesa", date: "July 28, 2025 @ 9:00 PM", venue: "Aula Magna, University of Lisbon", address: "Av. Prof. Gama Pinto 3, Lisbon" },
+                { title: "Concert in Torres Novas", date: "July 30, 2025 @ 9:30 PM", venue: "Teatro Virgínia", address: "Largo José Lopes dos Santos, Torres Novas" },
+                { title: "Concert in Góis", date: "August 1, 2025 @ 9:00 PM", venue: "Casa da Cultura de Góis", address: "R. Cmte. Henrique Bebiano Baeta Neves 13, Góis" }
+            ]
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabNavigation = document.getElementById('tab-navigation');
+            const tabContent = document.getElementById('tab-content');
+            
+            const accordionContainer = document.getElementById('accordion-container');
+            const travelButtonsContainer = document.getElementById('travel-buttons');
+            const diningGrid = document.getElementById('dining-grid');
+            const diningFilters = document.getElementById('dining-filters');
+            const concertsContainer = document.getElementById('concerts-container');
+
+            let travelChart = null;
+
+            function switchTab(tabName) {
+                Array.from(tabNavigation.children).forEach(item => {
+                    const button = item.querySelector('button');
+                    if (button.dataset.tab === tabName) {
+                        button.classList.replace('tab-inactive', 'tab-active');
+                    } else {
+                        button.classList.replace('tab-active', 'tab-inactive');
+                    }
+                });
+
+                Array.from(tabContent.children).forEach(content => {
+                    if (content.id === `${tabName}-content`) {
+                        content.classList.replace('content-inactive', 'content-active');
+                    } else {
+                        content.classList.replace('content-active', 'content-inactive');
+                    }
+                });
+                 if(tabName === 'travel' && !travelChart) {
+                    renderTravelChart();
+                    updateTravelDetails(appData.travel[0]);
+                }
+            }
+
+            tabNavigation.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    switchTab(e.target.dataset.tab);
+                }
+            });
+
+            function renderAccordion() {
+                appData.itinerary.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'border border-stone-200 rounded-lg bg-white';
+                    div.innerHTML = `
+                        <button class="accordion-header w-full flex justify-between items-center text-left p-4 hover:bg-amber-50 rounded-lg">
+                            <span class="flex items-center">
+                                <span class="text-2xl mr-4">${item.icon}</span>
+                                <div>
+                                    <span class="font-bold text-lg text-stone-800">${item.day}</span>
+                                    <span class="text-stone-600 block sm:inline sm:ml-2">${item.title}</span>
+                                </div>
+                            </span>
+                            <span class="text-orange-700 transform transition-transform duration-300">▼</span>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="p-4 border-t border-stone-200 space-y-2 text-stone-600">${item.content}</div>
+                        </div>
+                    `;
+                    accordionContainer.appendChild(div);
+                });
+            }
+
+            accordionContainer.addEventListener('click', (e) => {
+                const header = e.target.closest('.accordion-header');
+                if (!header) return;
+
+                const content = header.nextElementSibling;
+                const arrow = header.querySelector('span:last-child');
+                
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    arrow.style.transform = 'rotate(0deg)';
+                } else {
+                    document.querySelectorAll('.accordion-content').forEach(c => c.style.maxHeight = null);
+                    document.querySelectorAll('.accordion-header span:last-child').forEach(a => a.style.transform = 'rotate(0deg)');
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    arrow.style.transform = 'rotate(180deg)';
+                }
+            });
+
+            function renderTravelButtons() {
+                appData.travel.forEach((leg, index) => {
+                    const button = document.createElement('button');
+                    button.className = `px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg shadow-sm hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50`;
+                    button.textContent = leg.leg;
+                    button.addEventListener('click', () => {
+                         document.querySelectorAll('#travel-buttons button').forEach(btn => btn.classList.remove('bg-amber-100', 'border-orange-600'));
+                         button.classList.add('bg-amber-100', 'border-orange-600');
+                         updateTravelDetails(leg)
+                    });
+                    travelButtonsContainer.appendChild(button);
+                });
+                 travelButtonsContainer.firstChild.classList.add('bg-amber-100', 'border-orange-600');
+            }
+
+             function updateTravelDetails(leg) {
+                document.getElementById('travel-details-title').textContent = leg.leg;
+                document.getElementById('travel-details-text').innerHTML = `
+                    <p><strong>Mode:</strong> ${leg.mode}</p>
+                    <p><strong>Time:</strong> ~${leg.time * 60} mins</p>
+                    <p><strong>Cost:</strong> ${leg.cost}</p>
+                    <p class="mt-2"><strong>Notes:</strong> ${leg.notes}</p>
+                `;
+            }
+
+            function renderTravelChart() {
+                const ctx = document.getElementById('travelChart').getContext('2d');
+                travelChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: appData.travel.map(leg => leg.leg),
+                        datasets: [{
+                            label: 'Travel Time (in hours)',
+                            data: appData.travel.map(leg => leg.time),
+                            backgroundColor: '#fb923c',
+                            borderColor: '#c2410c',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) { label += ': '; }
+                                        if (context.parsed.x !== null) {
+                                            label += `${context.parsed.x} hours`;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Hours' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function renderDiningGrid(filter = 'all') {
+                diningGrid.innerHTML = '';
+                const filteredData = filter === 'all'
+                    ? appData.dining
+                    : appData.dining.filter(item => item.city === filter);
+                
+                filteredData.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white border border-stone-200 rounded-xl p-4 transform hover:scale-105 transition-transform duration-300';
+                    card.innerHTML = `
+                        <h4 class="font-bold text-lg text-stone-800">${item.name}</h4>
+                        <p class="text-sm font-semibold text-orange-700">${item.city} | ${item.price}</p>
+                        <p class="text-sm text-stone-600 mt-1">${item.style}</p>
+                        <p class="text-xs text-stone-500 mt-2">${item.notes}</p>
+                    `;
+                    diningGrid.appendChild(card);
+                });
+            }
+
+            diningFilters.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const filter = e.target.dataset.filter;
+                    renderDiningGrid(filter);
+                    // Style active button
+                    diningFilters.querySelectorAll('button').forEach(btn => {
+                        btn.classList.remove('bg-orange-700', 'text-white');
+                        btn.classList.add('bg-white', 'text-stone-700');
+                    });
+                    e.target.classList.add('bg-orange-700', 'text-white');
+                }
+            });
+            
+            function renderConcerts() {
+                appData.concerts.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-amber-50 p-6 rounded-lg border-l-4 border-orange-600';
+                    card.innerHTML = `
+                        <h3 class="text-xl font-bold text-stone-800">${item.title}</h3>
+                        <p class="font-semibold text-stone-700 mt-1">${item.date}</p>
+                        <p class="text-stone-600 mt-2"><strong>Venue:</strong> ${item.venue}</p>
+                        <p class="text-sm text-stone-500">${item.address}</p>
+                    `;
+                    concertsContainer.appendChild(card);
+                });
+            }
+
+            renderAccordion();
+            renderTravelButtons();
+            renderDiningGrid();
+            renderConcerts();
+        });
+    </script>
+
+</body>
+</html>
