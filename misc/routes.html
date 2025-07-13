@@ -5,19 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portugal Trip Map</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #fdfcf9; }
         h1, h2, h3 { font-family: 'Lora', serif; }
-        #map-container { position: relative; }
         #map { height: 80vh; width: 100%; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
-        .map-controls { position: absolute; top: 1rem; right: 1rem; background-color: white; padding: 0.75rem; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10; }
-        .control-group { margin-bottom: 0.5rem; }
-        .control-group h4 { font-weight: bold; margin-bottom: 0.25rem; font-family: 'Inter', sans-serif; font-size: 0.875rem; }
-        .control-group label { display: flex; align-items: center; font-size: 0.875rem; cursor: pointer; }
-        .legend i { width: 18px; height: 4px; display: inline-block; margin-right: 8px; vertical-align: middle; }
+        .leaflet-popup-content-wrapper { border-radius: 0.5rem; }
+        .leaflet-popup-content { font-family: 'Inter', sans-serif; }
+        .leaflet-control-layers-toggle { background-image: url(https://unpkg.com/leaflet@1.9.4/dist/images/layers.png); }
+        .legend { padding: 6px 8px; font: 14px/16px Arial, Helvetica, sans-serif; background: white; background: rgba(255,255,255,0.8); box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 5px; }
+        .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.9; }
     </style>
 </head>
 <body class="bg-amber-50 text-stone-700">
@@ -28,141 +29,122 @@
             <p class="text-lg text-stone-600 mt-2">An interactive overview of your hotels, concerts, and travel routes.</p>
         </header>
 
-        <div id="map-container">
-            <div id="map"></div>
-            <div class="map-controls">
-                <div class="control-group">
-                    <h4>Show on Map</h4>
-                    <label><input type="checkbox" id="toggle-hotels" class="mr-2" checked> 🏨 Hotels</label>
-                    <label><input type="checkbox" id="toggle-concerts" class="mr-2" checked> 🎻 Concerts</label>
-                    <label><input type="checkbox" id="toggle-routes" class="mr-2" checked> 🚌 Routes</label>
-                </div>
-                <div class="control-group legend">
-                    <h4>Route Type</h4>
-                    <label><i style="background:#c2410c;"></i> Express Bus</label>
-                    <label><i style="background:#1d4ed8; border-top: 2px dotted #1d4ed8; height: 2px;"></i> Private Transfer</label>
-                    <label><i style="background:#16a34a;"></i> Train</label>
-                </div>
-            </div>
-        </div>
+        <div id="map"></div>
     </div>
 
     <script>
-        // Data points with approximate coordinates
-        const locations = {
-            hotels: [
-                { lat: 38.7345, lng: -9.1535, name: "Hotel Olissippo Marquês de Sá", city: "Lisbon" },
-                { lat: 39.6308, lng: -8.6755, name: "Aurea Fátima Hotel Congress & Spa", city: "Fátima" },
-                { lat: 40.2155, lng: -8.4330, name: "Vila Gale Coimbra", city: "Coimbra" },
-                { lat: 41.1370, lng: -8.6145, name: "Forte de Gaia, Autograph Collection", city: "Porto/Gaia" }
-            ],
-            concerts: [
-                { lat: 38.7550, lng: -9.1585, name: "Aula Magna, University of Lisbon", city: "Lisbon" },
-                { lat: 39.4795, lng: -8.5395, name: "Teatro Virgínia", city: "Torres Novas" }
-            ]
-        };
+        document.addEventListener('DOMContentLoaded', function () {
+            // Data points with approximate coordinates
+            const locations = {
+                hotels: [
+                    { lat: 38.7345, lng: -9.1535, name: "Hotel Olissippo Marquês de Sá", city: "Lisbon" },
+                    { lat: 39.6308, lng: -8.6755, name: "Aurea Fátima Hotel Congress & Spa", city: "Fátima" },
+                    { lat: 40.2155, lng: -8.4330, name: "Vila Gale Coimbra", city: "Coimbra" },
+                    { lat: 41.1370, lng: -8.6145, name: "Forte de Gaia, Autograph Collection", city: "Porto/Gaia" }
+                ],
+                concerts: [
+                    { lat: 38.7550, lng: -9.1585, name: "Aula Magna, University of Lisbon", city: "Lisbon" },
+                    { lat: 39.4795, lng: -8.5395, name: "Teatro Virgínia", city: "Torres Novas" }
+                ]
+            };
 
-        // Updated travel routes, removing Góis and adding a direct Coimbra-Porto leg
-        const travelRoutes = [
-            { from: { lat: 38.7345, lng: -9.1535 }, to: { lat: 39.6308, lng: -8.6755 }, label: "Lisbon to Fátima (Bus)", color: '#c2410c', dashed: false },
-            { from: { lat: 39.6308, lng: -8.6755 }, to: { lat: 39.4795, lng: -8.5395 }, label: "Fátima to Torres Novas (Transfer)", color: '#1d4ed8', dashed: true },
-            { from: { lat: 39.6308, lng: -8.6755 }, to: { lat: 40.2155, lng: -8.4330 }, label: "Fátima to Coimbra (Bus)", color: '#c2410c', dashed: false },
-            { from: { lat: 40.2155, lng: -8.4330 }, to: { lat: 41.1370, lng: -8.6145 }, label: "Coimbra to Porto (Train)", color: '#16a34a', dashed: false }
-        ];
+            const travelRoutes = [
+                { from: [38.7345, -9.1535], to: [39.6308, -8.6755], label: "Lisbon to Fátima (Bus)", color: '#c2410c', dash: null },
+                { from: [39.6308, -8.6755], to: [39.4795, -8.5395], label: "Fátima to Torres Novas (Transfer)", color: '#1d4ed8', dash: '5, 10' },
+                { from: [39.6308, -8.6755], to: [40.2155, -8.4330], label: "Fátima to Coimbra (Bus)", color: '#c2410c', dash: null },
+                { from: [40.2155, -8.4330], to: [41.1370, -8.6145], label: "Coimbra to Porto (Train)", color: '#16a34a', dash: null }
+            ];
 
-        let map;
-        const hotelMarkers = [];
-        const concertMarkers = [];
-        const routePolylines = [];
-        let infoWindow;
+            // Initialize the map
+            const map = L.map('map').setView([39.8, -8.5], 7);
 
-        function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: 39.8, lng: -8.5 },
-                zoom: 7,
-                mapTypeControl: false,
-                streetViewControl: false,
+            // Add tile layer from OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Create custom icons
+            const hotelIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
             });
 
-            infoWindow = new google.maps.InfoWindow();
-            
-            const hotelIcon = 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-            const concertIcon = 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+            const concertIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
 
-            // Create Hotel Markers
+            // Create layer groups for controls
+            const hotelLayer = L.layerGroup();
+            const concertLayer = L.layerGroup();
+            const routeLayer = L.layerGroup();
+
+            // Add markers to layers
             locations.hotels.forEach(loc => {
-                const marker = new google.maps.Marker({
-                    position: { lat: loc.lat, lng: loc.lng },
-                    map: map,
-                    title: loc.name,
-                    icon: hotelIcon
-                });
-                marker.addListener('click', () => {
-                    infoWindow.setContent(`<b>${loc.name}</b><br>${loc.city}`);
-                    infoWindow.open(map, marker);
-                });
-                hotelMarkers.push(marker);
+                L.marker([loc.lat, loc.lng], { icon: hotelIcon })
+                 .bindPopup(`<b>${loc.name}</b><br>${loc.city}`)
+                 .addTo(hotelLayer);
             });
 
-            // Create Concert Markers
             locations.concerts.forEach(loc => {
-                const marker = new google.maps.Marker({
-                    position: { lat: loc.lat, lng: loc.lng },
-                    map: map,
-                    title: loc.name,
-                    icon: concertIcon
-                });
-                marker.addListener('click', () => {
-                    infoWindow.setContent(`<b>${loc.name}</b><br>Concert Venue in ${loc.city}`);
-                    infoWindow.open(map, marker);
-                });
-                concertMarkers.push(marker);
+                L.marker([loc.lat, loc.lng], { icon: concertIcon })
+                 .bindPopup(`<b>${loc.name}</b><br>Concert Venue in ${loc.city}`)
+                 .addTo(concertLayer);
             });
 
-            // Create Route Polylines
+            // Add routes to layer
             travelRoutes.forEach(route => {
-                const lineSymbol = {
-                    path: 'M 0,-1 0,1',
-                    strokeOpacity: 1,
-                    scale: 4
-                };
-                const polyline = new google.maps.Polyline({
-                    path: [route.from, route.to],
-                    geodesic: true,
-                    strokeColor: route.color,
-                    strokeOpacity: route.dashed ? 0 : 1,
-                    strokeWeight: 3,
-                    icons: route.dashed ? [{
-                        icon: lineSymbol,
-                        offset: '0',
-                        repeat: '20px'
-                    }] : null,
-                    map: map
-                });
-                 polyline.addListener('click', (event) => {
-                    infoWindow.setContent(route.label);
-                    infoWindow.setPosition(event.latLng);
-                    infoWindow.open(map);
-                });
-                routePolylines.push(polyline);
+                L.polyline([route.from, route.to], { 
+                    color: route.color, 
+                    weight: 3,
+                    dashArray: route.dash 
+                }).bindPopup(route.label).addTo(routeLayer);
             });
             
-            setupControls();
-        }
+            // Add layers to the map by default
+            hotelLayer.addTo(map);
+            concertLayer.addTo(map);
+            routeLayer.addTo(map);
 
-        function setupControls() {
-            document.getElementById('toggle-hotels').addEventListener('change', (e) => toggleLayer(hotelMarkers, e.target.checked));
-            document.getElementById('toggle-concerts').addEventListener('change', (e) => toggleLayer(concertMarkers, e.target.checked));
-            document.getElementById('toggle-routes').addEventListener('change', (e) => toggleLayer(routePolylines, e.target.checked));
-        }
+            // Layer control
+            const overlayMaps = {
+                "<span class='flex items-center'><img src='https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png' class='h-5 mr-1'> Hotels</span>": hotelLayer,
+                "<span class='flex items-center'><img src='https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png' class='h-5 mr-1'> Concerts</span>": concertLayer,
+                "<span class='flex items-center'>🚌 Routes</span>": routeLayer
+            };
+            L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
 
-        function toggleLayer(layer, isVisible) {
-            layer.forEach(item => {
-                item.setMap(isVisible ? map : null);
-            });
-        }
+            // Legend for route types
+            const legend = L.control({position: 'bottomright'});
+            legend.onAdd = function (map) {
+                const div = L.DomUtil.create('div', 'info legend');
+                const routeTypes = [
+                    { label: 'Express Bus', color: '#c2410c', dashed: false },
+                    { label: 'Private Transfer', color: '#1d4ed8', dashed: true },
+                    { label: 'Train', color: '#16a34a', dashed: false }
+                ];
+                
+                div.innerHTML += '<h4 class="font-bold mb-1">Route Type</h4>';
+                routeTypes.forEach(type => {
+                    let style = `background:${type.color};`;
+                    if (type.dashed) {
+                        style += ` border-top: 3px dotted white; background-clip: content-box;`;
+                    }
+                    div.innerHTML += `<div class="flex items-center"><i class="h-1" style="${style}"></i> ${type.label}</div>`;
+                });
 
+                return div;
+            };
+            legend.addTo(map);
+        });
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=&callback=initMap" async defer></script>
 </body>
 </html>
